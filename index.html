@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Exécution AJAX</title>
+  </head>
+  <body>
+    <center><div id="myCanvas"></div></center>
+
+    <script>
+      // Load the bitmap font image
+      const fontImage = new Image();
+      const bgImage = new Image();
+
+      // Promise pour attendre le chargement des deux images
+      Promise.all([
+        new Promise((resolve) => {
+          fontImage.onload = resolve;
+          fontImage.src = "img/ft.png";
+        }),
+        new Promise((resolve) => {
+          bgImage.onload = resolve;
+          bgImage.src = "img/bg.png";
+        }),
+      ]).then(() => {
+        // Le reste du code s'exécute une fois les images chargées
+        var NAME = "NoNameNo^WAB";
+
+        // Create and setup canvas
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const canvasContainer = document.getElementById("myCanvas");
+
+        // Set initial canvas size (80x25 characters * 8 pixels)
+        canvas.width = 80 * 16;
+        canvas.height = 25 * 32;
+        canvas.style.imageRendering = "pixelated"; // Keep pixel art sharp
+        canvasContainer.appendChild(canvas);
+
+        // Ajouter une pile pour suivre les scripts en cours d'exécution
+        let currentRunningScript = [];
+        let files = [];
+        let filePointers = [];
+        let fileModes = [];
+
+        let charWidth = 16; // Default character width
+        let charHeight = 32; // Default character height
+
+        let currentX = 1; // Position X de 1 à 80
+        let currentY = 1; // Position Y de 1 à 25
+        const lineHeight = 32; // Adjust this if needed
+        let currentColor = 15; // Current text color index, 15 is white by default
+        let currentBgColor = 0; // Current background color index, 0 is black by default
+
+        let blinker = false;
+
+        let currentKey = "";
+
+        // Tableaux pour stocker les caractères et attributs
+        let mychars = Array(25)
+          .fill()
+          .map(() => Array(80).fill(" "));
+        let myattribs = Array(25)
+          .fill()
+          .map(() => Array(80).fill({ bg: 0, fg: 7 }));
+
+        let keyQueue = [];
+        let lastProcessedKey = "";
+        let lastKeyPressTime = 0; // Add this line
+
+        document.addEventListener("keydown", (event) => {
+          event.preventDefault(); // Prevent default browser behavior
+          const currentTime = Date.now();
+          if (
+            !keyQueue.includes(event.key) ||
+            currentTime - lastKeyPressTime > 200
+          ) {
+            keyQueue.push(event.key);
+            lastKeyPressTime = currentTime;
+          }
+        });
+
+        document.addEventListener("keyup", (event) => {
+          event.preventDefault(); // Prevent default browser behavior
+          const index = keyQueue.indexOf(event.key);
+          if (index > -1) {
+            keyQueue.splice(index, 1);
+          }
+        });
+
+        function INKEY() {
+          if (keyQueue.length > 0) {
+            lastProcessedKey = keyQueue.shift(); // Change this line
+            return lastProcessedKey;
+          }
+          return "";
+        }
+
+        function CLS() {
+          // Draw background color across entire canvas
+          for (let y = 0; y < 25; y++) {
+            for (let x = 0; x < 80; x++) {
+              // Mise à jour des tableaux
+              mychars[y][x] = " ";
+              myattribs[y][x] = { bg: currentBgColor, fg: currentColor };
+
+              // Dessin sur le canvas
+              ctx.drawImage(
+                bgImage,
+                currentBgColor * 16,
+                0,
+                16,
+                32,
+                x * charWidth,
+                y * charHeight,
+                charWidth,
+                charHeight
+              );
+            }
+          }
+          // Reset cursor position
+          currentX = 1;
+          currentY = 1;
+        }
+
+        function NEWLINE() {
+          currentX = 1;
+          currentY++;
+          if (currentY > 25) {
+            currentY = 1;
+          }
+        }
+
+        function CLREOL() {
+          // Calculate starting position
+          const startX = (currentX - 1) * charWidth;
+          const y = (currentY - 1) * charHeight;
+
+          // Clear from current position to end of line
+          for (let x = currentX - 1; x < 80; x++) {
+            // Mise à jour des tableaux
+            mychars[currentY - 1][x] = " ";
+            myattribs[currentY - 1][x] = {
+              bg: currentBgColor,
+              fg: currentColor,
+            };
+
+            // Dessin sur le canvas
+            ctx.drawImage(
+              bgImage,
+              currentBgColor * 16,
+              0,
+              16,
+              32,
+              x * charWidth,
+              y,
+              charWidth,
+              charHeight
+            );
+          }
+        }
+
+        function ANSIPOS(x, y) {
+          if (x !== undefined && x !== null) {
+            currentX = x;
+          }
+          if (y !== undefined && y !== null) {
+            currentY = y;
+          }
+        }
+
+        function PRINT(str) {
+          for (let i = 0; i < str.length; i++) {
+            if (str[i] === "@") {
+              if (str[i + 1] === "X" && i + 3 < str.length) {
+                // Color change detected
+                currentBgColor = parseInt(str[i + 2], 16);
+                currentColor = parseInt(str[i + 3], 16);
+
+                i += 3;
+              } else if (str.substring(i, i + 6) === "@USER@") {
+                // User tag detected
+                PRINT(NAME);
+                i += 5;
+              } else {
+                // Si @ n'est pas suivi de X ou de USER@, on l'affiche normalement
+                drawChar("@", currentX, currentY);
+                currentX++;
+              }
+            } else {
+              // Check if we need to wrap to the next line
+              if (currentX > 80) {
+                currentX = 1;
+                currentY++;
+              }
+
+              drawChar(str[i], currentX, currentY);
+              currentX++;
+            }
+          }
+        }
+
+        function PRINTLN(str) {
+          PRINT(str);
+          currentX = 1; // Reset à 1 (première colonne)
+          currentY++; // Incrémente d'une ligne
+        }
+
+        function DELAY(val) {
+          return new Promise((resolve) => {
+            setTimeout(resolve, val * 100); // val * 100 car val est en dixièmes de seconde
+          });
+        }
+
+        function GETX() {
+          return currentX;
+        }
+
+        function GETY() {
+          return currentY;
+        }
+
+        function RIGHT(str, len) {
+          if (!str) return "";
+          if (len <= 0) return "";
+          if (len >= str.length) return str;
+          return str.slice(-len);
+        }
+
+        function LEFT(str, len) {
+          if (!str) return "";
+          if (len <= 0) return "";
+          if (len >= str.length) return str;
+          return str.slice(0, len);
+        }
+
+        function LEN(str) {
+          if (!str) return 0;
+          return str.length;
+        }
+
+        function UPPER(str) {
+          if (!str) return "";
+          return str.toUpperCase();
+        }
+
+        async function WAIT() {
+          while (!INKEY()) {
+            await new Promise((resolve) => setTimeout(resolve, 50)); // Reduced delay for more responsiveness
+          }
+        }
+
+        // Nouvelle fonction SCRTEXT
+        function SCRTEXT(x, y, len, code) {
+          let result = "";
+          let lastBg = -1;
+          let lastFg = -1;
+
+          for (let i = 0; i < len; i++) {
+            if (x + i > 80) break; // Ne pas dépasser la largeur
+
+            const char = mychars[y - 1][x + i - 1];
+            const attrib = myattribs[y - 1][x + i - 1];
+
+            if (code) {
+              // Ajouter les codes couleur si nécessaire
+              if (attrib.bg !== lastBg || attrib.fg !== lastFg) {
+                result += `@X${attrib.bg.toString(16)}${attrib.fg.toString(
+                  16
+                )}`;
+                lastBg = attrib.bg;
+                lastFg = attrib.fg;
+              }
+            }
+            result += char;
+          }
+
+          return result;
+        }
+
+        function U_NAME() {
+          return NAME;
+        }
+
+        async function FOPEN(index) {
+          if (index < 1 || index > 5) {
+            throw new Error("Index must be between 1 and 5");
+          }
+
+          return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "file_action.php", true);
+            xhr.setRequestHeader(
+              "Content-Type",
+              "application/x-www-form-urlencoded"
+            );
+
+            xhr.onload = function () {
+              if (xhr.status === 200) {
+                files[index] = {
+                  content: xhr.responseText.split("\n"),
+                  index: index,
+                };
+                filePointers[index] = 0;
+                resolve();
+              } else {
+                reject(new Error("Failed to load file"));
+              }
+            };
+
+            xhr.onerror = () => reject(new Error("Network error"));
+
+            const currentScript =
+              currentRunningScript[currentRunningScript.length - 1] ||
+              "unknown";
+
+            const data = {
+              action: "FOPEN",
+              index: index,
+              script: currentScript,
+            };
+
+            xhr.send(`data=${encodeURIComponent(JSON.stringify(data))}`);
+          });
+        }
+
+        function FGET(index) {
+          if (!files[index]) {
+            throw new Error("File not opened");
+          }
+
+          if (filePointers[index] >= files[index].content.length) {
+            return null;
+          }
+
+          const value = files[index].content[filePointers[index]++];
+
+          // Si c'est un nombre, le convertir
+          if (!isNaN(value)) {
+            return Number(value);
+          }
+
+          // Si c'est une chaîne, supprimer uniquement CR et LF à la fin
+          if (typeof value === "string") {
+            return value.replace(/[\r\n]+$/, "");
+          }
+
+          return value;
+        }
+
+        function FCLOSE(index) {
+          files[index] = null;
+          filePointers[index] = 0;
+          fileModes[index] = null;
+        }
+
+        //-------------------------
+        //- Tools functions
+        //-------------------------
+
+        // Modifier loadAndRun pour gérer correctement la pile de scripts
+        function loadAndRun(scriptName) {
+          const xhr = new XMLHttpRequest();
+          const nocache = "?_=" + Date.now();
+          xhr.open("GET", scriptName + nocache, true);
+
+          xhr.onload = function () {
+            if (xhr.status === 200) {
+              currentRunningScript.push(scriptName); // Empiler le script
+              try {
+                // Utiliser une fonction asynchrone auto-exécutée pour attendre la fin
+                (async () => {
+                  await eval(xhr.responseText);
+                  currentRunningScript.pop(); // Dépiler seulement après que tout soit fini
+                })();
+              } catch (error) {
+                console.error("Error executing script:", error);
+                currentRunningScript.pop(); // Dépiler en cas d'erreur aussi
+              }
+            } else {
+              console.error("Error loading the script:", xhr.statusText);
+            }
+          };
+
+          xhr.onerror = function () {
+            console.error("Network error occurred");
+          };
+
+          xhr.send();
+        }
+
+        function mapSpecialChar(char) {
+          const charCode = char.charCodeAt(0);
+          if (charCode > 32 && charCode < 128) {
+            return charCode; // Return as-is for all characters 0-255
+          }
+
+          const specialChars = {
+            // Unicode to CP737 mappings for common symbols
+            "☺": 1,
+            "☻": 2,
+            "♥": 3,
+            "♦": 4,
+            "♣": 5,
+            "♠": 6,
+            "•": 7,
+            "◘": 8,
+            "○": 9,
+            "◙": 10,
+            "♂": 11,
+            "♀": 12,
+            "♪": 13,
+            "♫": 14,
+            "☼": 15,
+            "►": 16,
+            "◄": 17,
+            "↕": 18,
+            "‼": 19,
+            "¶": 20,
+            "§": 21,
+            "▬": 22,
+            "↨": 23,
+            "↑": 24,
+            "↓": 25,
+            "→": 26,
+            "←": 27,
+            "∟": 28,
+            "↔": 29,
+            "▲": 30,
+            "▼": 31,
+
+            "⌂": 127,
+
+            // Extended ASCII mappings (128-255)
+            Ç: 128,
+            ü: 129,
+            é: 130,
+            â: 131,
+            ä: 132,
+            à: 133,
+            å: 134,
+            ç: 135,
+            ê: 136,
+            ë: 137,
+            è: 138,
+            ï: 139,
+            î: 140,
+            ì: 141,
+            Ä: 142,
+            Å: 143,
+            É: 144,
+            æ: 145,
+            Æ: 146,
+            ô: 147,
+            ö: 148,
+            ò: 149,
+            û: 150,
+            ù: 151,
+            ÿ: 152,
+            Ö: 153,
+            Ü: 154,
+            "¢": 155,
+            "£": 156,
+            "¥": 157,
+            "₧": 158,
+            ƒ: 159,
+            á: 160,
+            í: 161,
+            ó: 162,
+            ú: 163,
+            ñ: 164,
+            Ñ: 165,
+            ª: 166,
+            º: 167,
+            "¿": 168,
+            "⌐": 169,
+            "¬": 170,
+            "½": 171,
+            "¼": 172,
+            "¡": 173,
+            "«": 174,
+            "»": 175,
+            "░": 176,
+            "▒": 177,
+            "▓": 178,
+            "│": 179,
+            "┤": 180,
+            "╡": 181,
+            "╢": 182,
+            "╖": 183,
+            "╕": 184,
+            "╣": 185,
+            "║": 186,
+            "╗": 187,
+            "╝": 188,
+            "╜": 189,
+            "╛": 190,
+            "┐": 191,
+            "└": 192,
+            "┴": 193,
+            "┬": 194,
+            "├": 195,
+            "─": 196,
+            "┼": 197,
+            "╞": 198,
+            "╟": 199,
+            "╚": 200,
+            "╔": 201,
+            "╩": 202,
+            "╦": 203,
+            "╠": 204,
+            "═": 205,
+            "╬": 206,
+            "╧": 207,
+            "╨": 208,
+            "╤": 209,
+            "╥": 210,
+            "╙": 211,
+            "╘": 212,
+            "╒": 213,
+            "╓": 214,
+            "╫": 215,
+            "╪": 216,
+            "┘": 217,
+            "┌": 218,
+            "█": 219,
+            "▄": 220,
+            "▌": 221,
+            "▐": 222,
+            "▀": 223,
+            α: 224,
+            ß: 225,
+            Γ: 226,
+            π: 227,
+            Σ: 228,
+            σ: 229,
+            µ: 230,
+            τ: 231,
+            Φ: 232,
+            Θ: 233,
+            Ω: 234,
+            δ: 235,
+            "∞": 236,
+            φ: 237,
+            ε: 238,
+            "∩": 239,
+            "≡": 240,
+            "±": 241,
+            "≥": 242,
+            "≤": 243,
+            "⌠": 244,
+            "⌡": 245,
+            "÷": 246,
+            "≈": 247,
+            "°": 248,
+            "∙": 249,
+            "·": 250,
+            "√": 251,
+            ⁿ: 252,
+            "²": 253,
+            "■": 254,
+            " ": 255,
+          };
+
+          return specialChars[char]; // Return space (32) if character is not found
+        }
+
+        // Modifier drawChar pour mettre à jour les tableaux
+        function drawChar(char, x, y) {
+          // Sauvegarder le caractère et ses attributs
+          mychars[y - 1][x - 1] = char;
+          myattribs[y - 1][x - 1] = { bg: currentBgColor, fg: currentColor };
+
+          const charCode = mapSpecialChar(char);
+          const sourceX = (charCode % 256) * charWidth;
+          const sourceY = currentColor * charHeight;
+
+          // Convert character positions to pixel positions
+          const pixelX = (x - 1) * charWidth;
+          const pixelY = (y - 1) * charHeight;
+
+          // Draw background first
+          ctx.drawImage(
+            bgImage,
+            currentBgColor * 16,
+            0,
+            16,
+            32,
+            pixelX,
+            pixelY,
+            charWidth,
+            charHeight
+          );
+
+          // Then draw the character
+          ctx.drawImage(
+            fontImage,
+            sourceX,
+            sourceY,
+            charWidth,
+            charHeight,
+            pixelX,
+            pixelY,
+            charWidth,
+            charHeight
+          );
+        }
+
+        // Fonction pour faire clignoter le curseur
+        function startBlinker() {
+          setInterval(() => {
+            blinker = !blinker; // Inverse la valeur de blinker
+          }, 500); // Toutes les 500ms
+        }
+
+        // Démarrer le clignotement immédiatement
+        startBlinker();
+        CLS();
+        //----------------
+        //----------------
+        // RUN from here ;)
+        //----------------
+        //----------------
+        loadAndRun("PPE/bricks22/index.js");
+
+        async function FPUT(index, value) {
+          if (!files[index]) {
+            throw new Error("File not opened");
+          }
+
+          return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "file_action.php", true);
+            xhr.setRequestHeader(
+              "Content-Type",
+              "application/x-www-form-urlencoded"
+            );
+
+            xhr.onload = function () {
+              if (xhr.status === 200) {
+                resolve();
+              } else {
+                reject(new Error("Failed to write to file"));
+              }
+            };
+
+            xhr.onerror = () => reject(new Error("Network error"));
+
+            const currentScript =
+              currentRunningScript[currentRunningScript.length - 1] ||
+              "unknown";
+
+            const data = {
+              action: "FPUT",
+              index: index,
+              value: value,
+              script: currentScript,
+              addCRLF: false,
+            };
+
+            xhr.send(`data=${encodeURIComponent(JSON.stringify(data))}`);
+          });
+        }
+
+        async function FPUTLN(index, value) {
+          if (!files[index]) {
+            throw new Error("File not opened");
+          }
+
+          return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "file_action.php", true);
+            xhr.setRequestHeader(
+              "Content-Type",
+              "application/x-www-form-urlencoded"
+            );
+
+            xhr.onload = function () {
+              if (xhr.status === 200) {
+                resolve();
+              } else {
+                reject(new Error("Failed to write to file"));
+              }
+            };
+
+            xhr.onerror = () => reject(new Error("Network error"));
+
+            const currentScript =
+              currentRunningScript[currentRunningScript.length - 1] ||
+              "unknown";
+
+            const data = {
+              action: "FPUT",
+              index: index,
+              value: value,
+              script: currentScript,
+              addCRLF: true,
+            };
+
+            xhr.send(`data=${encodeURIComponent(JSON.stringify(data))}`);
+          });
+        }
+
+        function FSIZE(index) {
+          if (!files[index]) {
+            throw new Error("File not opened");
+          }
+
+          // Obtenir le contenu
+          let content = files[index].content;
+
+          // Si le tableau est vide, retourner 0
+          if (content.length === 0) return 0;
+
+          // Si la dernière ligne est vide, retourner la longueur - 1
+          if (content[content.length - 1].trim() === "") {
+            return content.length - 1;
+          }
+
+          // Sinon retourner la longueur totale
+          return content.length;
+        }
+      });
+    </script>
+  </body>
+</html>
