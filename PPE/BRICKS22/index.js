@@ -51,14 +51,7 @@
     FCLOSE(1);
     S = K - 13;
     CLS();
-    PRINTLN(
-      NOCOL +
-        "┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴ " +
-        HLTXT +
-        "BRICKS" +
-        NOCOL +
-        " ┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴@X08cL@X07"
-    );
+    PRINTLN(NOCOL + "┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴ " + HLTXT + "BRICKS" + NOCOL + " ┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴@X08cL@X07");
     for (Z = K - 13; Z <= K; Z++) {
       C = C + 1;
       ANSIPOS(1, C + 1);
@@ -66,41 +59,13 @@
       PRINTLN("@X0F" + LINES[Z] + "@X07");
     }
     ANSIPOS(1, 16);
-    PRINTLN(
-      NOCOL +
-        "┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬v2.2┴┬@X07"
-    );
+    PRINTLN(NOCOL + "┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬v2.2┴┬@X07");
 
     ANSIPOS(1, 18);
-    PRINT(
-      "@X08 ■ @X0F" +
-        OPT[1] +
-        "@X08 ■@X0F " +
-        OPT[2] +
-        "@X08 ■@X0F " +
-        OPT[3] +
-        "@X08 ■ @X0F" +
-        OPT[4] +
-        "@X08 ■@X0F " +
-        OPT[5] +
-        "@X08 ■@X0F " +
-        OPT[6] +
-        "@X08 ■@X0F " +
-        OPT[7] +
-        "@X08 ■@X0F " +
-        OPT[8] +
-        "@X08 ■@X0F " +
-        OPT[9] +
-        "@X08 ■@X0F " +
-        OPT[10] +
-        "@X08 ■ @X0F" +
-        OPT[11] +
-        "@X08 ■@X0F " +
-        "@X07"
-    );
+    PRINT("@X08 ■ @X0F" + OPT[1] + "@X08 ■@X0F " + OPT[2] + "@X08 ■@X0F " + OPT[3] + "@X08 ■ @X0F" + OPT[4] + "@X08 ■@X0F " + OPT[5] + "@X08 ■@X0F " + OPT[6] + "@X08 ■@X0F " + OPT[7] + "@X08 ■@X0F " + OPT[8] + "@X08 ■@X0F " + OPT[9] + "@X08 ■@X0F " + OPT[10] + "@X08 ■ @X0F" + OPT[11] + "@X08 ■@X0F " + "@X07");
 
     while (true) {
-      ONE = INKEY();
+      ONE = await INKEY();
 
       if ((ONE == "ArrowUp") | ((ONE == "Enter") & (HL == 1))) {
         S = S - 1;
@@ -161,9 +126,6 @@
         OPT[HL] = HLTXT + OPT[HL];
         DRAWMENU();
       }
-
-      console.log(ONE);
-      await new Promise((resolve) => setTimeout(resolve, 50)); // Reduced delay for more responsiveness
     }
   }
 
@@ -210,51 +172,16 @@
     NEWLINE();
     await WAIT();
     CLS();
-    PRINTLN(
-      NOCOL +
-        "┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴ " +
-        HLTXT +
-        "BRICKS" +
-        NOCOL +
-        " ┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴@X08cL@X07"
-    );
+    PRINTLN(NOCOL + "┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴ " + HLTXT + "BRICKS" + NOCOL + " ┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴@X08cL@X07");
     REDRAW();
     ANSIPOS(1, 16);
-    PRINTLN(
-      NOCOL +
-        "┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬v2.2┴┬@X07"
-    );
+    PRINTLN(NOCOL + "┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬┴┬v2.2┴┬@X07");
     DRAWMENU();
   }
 
   function DRAWMENU() {
     ANSIPOS(1, 18);
-    PRINT(
-      "@X08 ■ @X0F" +
-        OPT[1] +
-        "@X08 ■@X0F " +
-        OPT[2] +
-        "@X08 ■@X0F " +
-        OPT[3] +
-        "@X08 ■ @X0F" +
-        OPT[4] +
-        "@X08 ■@X0F " +
-        OPT[5] +
-        "@X08 ■@X0F " +
-        OPT[6] +
-        "@X08 ■@X0F " +
-        OPT[7] +
-        "@X08 ■@X0F " +
-        OPT[8] +
-        "@X08 ■@X0F " +
-        OPT[9] +
-        "@X08 ■@X0F " +
-        OPT[10] +
-        "@X08 ■ @X0F" +
-        OPT[11] +
-        "@X08 ■@X0F " +
-        "@X07"
-    );
+    PRINT("@X08 ■ @X0F" + OPT[1] + "@X08 ■@X0F " + OPT[2] + "@X08 ■@X0F " + OPT[3] + "@X08 ■ @X0F" + OPT[4] + "@X08 ■@X0F " + OPT[5] + "@X08 ■@X0F " + OPT[6] + "@X08 ■@X0F " + OPT[7] + "@X08 ■@X0F " + OPT[8] + "@X08 ■@X0F " + OPT[9] + "@X08 ■@X0F " + OPT[10] + "@X08 ■ @X0F" + OPT[11] + "@X08 ■@X0F " + "@X07");
   }
 
   async function INPU() {
@@ -268,8 +195,7 @@
     CLREOL();
 
     while (ONE != "Escape") {
-      console.log("avant inkey : " + ONE);
-      ONE = INKEY();
+      ONE = await INKEY();
 
       if (LEN(ONE) == 1) {
         PRINT(ONE);
@@ -369,8 +295,6 @@
       else PRINT(" ");
 
       ANSIPOS(posi, 22);
-
-      await new Promise((resolve) => setTimeout(resolve, 50)); // Reduced delay for more responsiveness
     }
     ANSIPOS(1, 22);
     CLREOL();
@@ -384,5 +308,5 @@
 
   await HOME();
 
-  loadAndRun("PPE/deux/index.js");
+  await loadAndRun("PPE/deux/index.js");
 })();

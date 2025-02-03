@@ -42,20 +42,16 @@
         let currentRunningScript = [];
         let files = [];
         let filePointers = [];
-        let fileModes = [];
 
         let charWidth = 16; // Default character width
         let charHeight = 32; // Default character height
 
         let currentX = 1; // Position X de 1 à 80
         let currentY = 1; // Position Y de 1 à 25
-        const lineHeight = 32; // Adjust this if needed
         let currentColor = 15; // Current text color index, 15 is white by default
         let currentBgColor = 0; // Current background color index, 0 is black by default
 
         let blinker = false;
-
-        let currentKey = "";
 
         // Tableaux pour stocker les caractères et attributs
         let mychars = Array(25)
@@ -72,10 +68,7 @@
         document.addEventListener("keydown", (event) => {
           event.preventDefault(); // Prevent default browser behavior
           const currentTime = Date.now();
-          if (
-            !keyQueue.includes(event.key) ||
-            currentTime - lastKeyPressTime > 200
-          ) {
+          if (!keyQueue.includes(event.key) || currentTime - lastKeyPressTime > 200) {
             keyQueue.push(event.key);
             lastKeyPressTime = currentTime;
           }
@@ -89,11 +82,12 @@
           }
         });
 
-        function INKEY() {
+        async function INKEY() {
           if (keyQueue.length > 0) {
             lastProcessedKey = keyQueue.shift(); // Change this line
             return lastProcessedKey;
           }
+          await new Promise((resolve) => setTimeout(resolve, 50)); // Reduced delay for more responsiveness
           return "";
         }
 
@@ -106,17 +100,7 @@
               myattribs[y][x] = { bg: currentBgColor, fg: currentColor };
 
               // Dessin sur le canvas
-              ctx.drawImage(
-                bgImage,
-                currentBgColor * 16,
-                0,
-                16,
-                32,
-                x * charWidth,
-                y * charHeight,
-                charWidth,
-                charHeight
-              );
+              ctx.drawImage(bgImage, currentBgColor * 16, 0, 16, 32, x * charWidth, y * charHeight, charWidth, charHeight);
             }
           }
           // Reset cursor position
@@ -147,17 +131,7 @@
             };
 
             // Dessin sur le canvas
-            ctx.drawImage(
-              bgImage,
-              currentBgColor * 16,
-              0,
-              16,
-              32,
-              x * charWidth,
-              y,
-              charWidth,
-              charHeight
-            );
+            ctx.drawImage(bgImage, currentBgColor * 16, 0, 16, 32, x * charWidth, y, charWidth, charHeight);
           }
         }
 
@@ -266,9 +240,7 @@
             if (code) {
               // Ajouter les codes couleur si nécessaire
               if (attrib.bg !== lastBg || attrib.fg !== lastFg) {
-                result += `@X${attrib.bg.toString(16)}${attrib.fg.toString(
-                  16
-                )}`;
+                result += `@X${attrib.bg.toString(16)}${attrib.fg.toString(16)}`;
                 lastBg = attrib.bg;
                 lastFg = attrib.fg;
               }
@@ -291,10 +263,7 @@
           return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             xhr.open("POST", "file_action.php", true);
-            xhr.setRequestHeader(
-              "Content-Type",
-              "application/x-www-form-urlencoded"
-            );
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
             xhr.onload = function () {
               if (xhr.status === 200) {
@@ -311,9 +280,7 @@
 
             xhr.onerror = () => reject(new Error("Network error"));
 
-            const currentScript =
-              currentRunningScript[currentRunningScript.length - 1] ||
-              "unknown";
+            const currentScript = currentRunningScript[currentRunningScript.length - 1] || "unknown";
 
             const data = {
               action: "FOPEN",
@@ -352,7 +319,6 @@
         function FCLOSE(index) {
           files[index] = null;
           filePointers[index] = 0;
-          fileModes[index] = null;
         }
 
         async function FPUT(index, value) {
@@ -363,10 +329,7 @@
           return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             xhr.open("POST", "file_action.php", true);
-            xhr.setRequestHeader(
-              "Content-Type",
-              "application/x-www-form-urlencoded"
-            );
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
             xhr.onload = function () {
               if (xhr.status === 200) {
@@ -378,9 +341,7 @@
 
             xhr.onerror = () => reject(new Error("Network error"));
 
-            const currentScript =
-              currentRunningScript[currentRunningScript.length - 1] ||
-              "unknown";
+            const currentScript = currentRunningScript[currentRunningScript.length - 1] || "unknown";
 
             const data = {
               action: "FPUT",
@@ -402,10 +363,7 @@
           return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             xhr.open("POST", "file_action.php", true);
-            xhr.setRequestHeader(
-              "Content-Type",
-              "application/x-www-form-urlencoded"
-            );
+            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
 
             xhr.onload = function () {
               if (xhr.status === 200) {
@@ -417,9 +375,7 @@
 
             xhr.onerror = () => reject(new Error("Network error"));
 
-            const currentScript =
-              currentRunningScript[currentRunningScript.length - 1] ||
-              "unknown";
+            const currentScript = currentRunningScript[currentRunningScript.length - 1] || "unknown";
 
             const data = {
               action: "FPUT",
@@ -453,39 +409,66 @@
           return content.length;
         }
 
+        // Nouvelle fonction DISPFILE
+        async function DISPFILE(index) {
+          try {
+            await FOPEN(index);
+
+            const size = FSIZE(index);
+            // Lire et afficher chaque ligne
+            for (let i = 0; i < size; i++) {
+              const line = FGET(index);
+              PRINTLN(line);
+            }
+
+            FCLOSE(index);
+          } catch (error) {
+            PRINTLN("@X0C Error reading file: " + error.message);
+          }
+        }
+
         //-------------------------
         //- Tools functions
         //-------------------------
 
         // Modifier loadAndRun pour gérer correctement la pile de scripts
-        function loadAndRun(scriptName) {
-          const xhr = new XMLHttpRequest();
-          const nocache = "?_=" + Date.now();
-          xhr.open("GET", scriptName + nocache, true);
+        async function loadAndRun(scriptName) {
+          return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            const nocache = "?_=" + Date.now();
+            xhr.open("GET", scriptName + nocache, true);
 
-          xhr.onload = function () {
-            if (xhr.status === 200) {
-              currentRunningScript.push(scriptName); // Empiler le script
-              try {
-                // Utiliser une fonction asynchrone auto-exécutée pour attendre la fin
-                (async () => {
-                  await eval(xhr.responseText);
-                  currentRunningScript.pop(); // Dépiler seulement après que tout soit fini
-                })();
-              } catch (error) {
-                console.error("Error executing script:", error);
-                currentRunningScript.pop(); // Dépiler en cas d'erreur aussi
+            xhr.onload = function () {
+              if (xhr.status === 200) {
+                currentRunningScript.push(scriptName); // Empiler le script
+                try {
+                  // Utiliser une fonction asynchrone auto-exécutée pour attendre la fin
+                  (async () => {
+                    currentBgColor = 0;
+                    currentColor = 7;
+                    CLS();
+                    await eval(xhr.responseText);
+                    currentRunningScript.pop(); // Dépiler seulement après que tout soit fini
+                    resolve(); // Résoudre la promesse une fois terminé
+                  })();
+                } catch (error) {
+                  console.error("Error executing script:", error);
+                  currentRunningScript.pop(); // Dépiler en cas d'erreur aussi
+                  reject(error); // Rejeter la promesse en cas d'erreur
+                }
+              } else {
+                console.error("Error loading the script:", xhr.statusText);
+                reject(new Error(xhr.statusText));
               }
-            } else {
-              console.error("Error loading the script:", xhr.statusText);
-            }
-          };
+            };
 
-          xhr.onerror = function () {
-            console.error("Network error occurred");
-          };
+            xhr.onerror = function () {
+              console.error("Network error occurred");
+              reject(new Error("Network error"));
+            };
 
-          xhr.send();
+            xhr.send();
+          });
         }
 
         function mapSpecialChar(char) {
@@ -679,30 +662,10 @@
           const pixelY = (y - 1) * charHeight;
 
           // Draw background first
-          ctx.drawImage(
-            bgImage,
-            currentBgColor * 16,
-            0,
-            16,
-            32,
-            pixelX,
-            pixelY,
-            charWidth,
-            charHeight
-          );
+          ctx.drawImage(bgImage, currentBgColor * 16, 0, 16, 32, pixelX, pixelY, charWidth, charHeight);
 
           // Then draw the character
-          ctx.drawImage(
-            fontImage,
-            sourceX,
-            sourceY,
-            charWidth,
-            charHeight,
-            pixelX,
-            pixelY,
-            charWidth,
-            charHeight
-          );
+          ctx.drawImage(fontImage, sourceX, sourceY, charWidth, charHeight, pixelX, pixelY, charWidth, charHeight);
         }
 
         // Fonction pour faire clignoter le curseur
@@ -714,13 +677,15 @@
 
         // Démarrer le clignotement immédiatement
         startBlinker();
-        CLS();
         //----------------
         //----------------
         // RUN from here ;)
         //----------------
         //----------------
-        loadAndRun("PPE/CIAONE20/index.js");
+        // Exécuter les scripts de manière séquentielle
+        (async () => {
+          await loadAndRun("PPE/CIAONE20/index.js");
+        })();
       });
     </script>
   </body>

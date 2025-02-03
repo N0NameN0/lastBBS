@@ -27,19 +27,19 @@ $scriptPath = "PPE/".preg_replace('/^[^\/]+\//', '', $scriptPath);
 // Association directe entre index et nom de fichier
 switch($index) {
     case 1:
-        $filename = $scriptPath . "/file1.dat";
+        $filename = $scriptPath . "/FILE1.DAT";
         break;
     case 2:
-        $filename = $scriptPath . "/file2.dat";
+        $filename = $scriptPath . "/FILE2.DAT";
         break;
     case 3:
-        $filename = $scriptPath . "/file3.dat";
+        $filename = $scriptPath . "/FILE3.DAT";
         break;
     case 4:
-        $filename = $scriptPath . "/file4.dat";
+        $filename = $scriptPath . "/FILE4.DAT";
         break;
     case 5:
-        $filename = $scriptPath . "/file5.dat";
+        $filename = $scriptPath . "/FILE5.DAT";
         break;
     default:
         die("Invalid index");
