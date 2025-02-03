@@ -355,6 +355,104 @@
           fileModes[index] = null;
         }
 
+        async function FPUT(index, value) {
+          if (!files[index]) {
+            throw new Error("File not opened");
+          }
+
+          return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "file_action.php", true);
+            xhr.setRequestHeader(
+              "Content-Type",
+              "application/x-www-form-urlencoded"
+            );
+
+            xhr.onload = function () {
+              if (xhr.status === 200) {
+                resolve();
+              } else {
+                reject(new Error("Failed to write to file"));
+              }
+            };
+
+            xhr.onerror = () => reject(new Error("Network error"));
+
+            const currentScript =
+              currentRunningScript[currentRunningScript.length - 1] ||
+              "unknown";
+
+            const data = {
+              action: "FPUT",
+              index: index,
+              value: value,
+              script: currentScript,
+              addCRLF: false,
+            };
+
+            xhr.send(`data=${encodeURIComponent(JSON.stringify(data))}`);
+          });
+        }
+
+        async function FPUTLN(index, value) {
+          if (!files[index]) {
+            throw new Error("File not opened");
+          }
+
+          return new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "file_action.php", true);
+            xhr.setRequestHeader(
+              "Content-Type",
+              "application/x-www-form-urlencoded"
+            );
+
+            xhr.onload = function () {
+              if (xhr.status === 200) {
+                resolve();
+              } else {
+                reject(new Error("Failed to write to file"));
+              }
+            };
+
+            xhr.onerror = () => reject(new Error("Network error"));
+
+            const currentScript =
+              currentRunningScript[currentRunningScript.length - 1] ||
+              "unknown";
+
+            const data = {
+              action: "FPUT",
+              index: index,
+              value: value,
+              script: currentScript,
+              addCRLF: true,
+            };
+
+            xhr.send(`data=${encodeURIComponent(JSON.stringify(data))}`);
+          });
+        }
+
+        function FSIZE(index) {
+          if (!files[index]) {
+            throw new Error("File not opened");
+          }
+
+          // Obtenir le contenu
+          let content = files[index].content;
+
+          // Si le tableau est vide, retourner 0
+          if (content.length === 0) return 0;
+
+          // Si la dernière ligne est vide, retourner la longueur - 1
+          if (content[content.length - 1].trim() === "") {
+            return content.length - 1;
+          }
+
+          // Sinon retourner la longueur totale
+          return content.length;
+        }
+
         //-------------------------
         //- Tools functions
         //-------------------------
@@ -623,104 +721,6 @@
         //----------------
         //----------------
         loadAndRun("PPE/bricks22/index.js");
-
-        async function FPUT(index, value) {
-          if (!files[index]) {
-            throw new Error("File not opened");
-          }
-
-          return new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.open("POST", "file_action.php", true);
-            xhr.setRequestHeader(
-              "Content-Type",
-              "application/x-www-form-urlencoded"
-            );
-
-            xhr.onload = function () {
-              if (xhr.status === 200) {
-                resolve();
-              } else {
-                reject(new Error("Failed to write to file"));
-              }
-            };
-
-            xhr.onerror = () => reject(new Error("Network error"));
-
-            const currentScript =
-              currentRunningScript[currentRunningScript.length - 1] ||
-              "unknown";
-
-            const data = {
-              action: "FPUT",
-              index: index,
-              value: value,
-              script: currentScript,
-              addCRLF: false,
-            };
-
-            xhr.send(`data=${encodeURIComponent(JSON.stringify(data))}`);
-          });
-        }
-
-        async function FPUTLN(index, value) {
-          if (!files[index]) {
-            throw new Error("File not opened");
-          }
-
-          return new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest();
-            xhr.open("POST", "file_action.php", true);
-            xhr.setRequestHeader(
-              "Content-Type",
-              "application/x-www-form-urlencoded"
-            );
-
-            xhr.onload = function () {
-              if (xhr.status === 200) {
-                resolve();
-              } else {
-                reject(new Error("Failed to write to file"));
-              }
-            };
-
-            xhr.onerror = () => reject(new Error("Network error"));
-
-            const currentScript =
-              currentRunningScript[currentRunningScript.length - 1] ||
-              "unknown";
-
-            const data = {
-              action: "FPUT",
-              index: index,
-              value: value,
-              script: currentScript,
-              addCRLF: true,
-            };
-
-            xhr.send(`data=${encodeURIComponent(JSON.stringify(data))}`);
-          });
-        }
-
-        function FSIZE(index) {
-          if (!files[index]) {
-            throw new Error("File not opened");
-          }
-
-          // Obtenir le contenu
-          let content = files[index].content;
-
-          // Si le tableau est vide, retourner 0
-          if (content.length === 0) return 0;
-
-          // Si la dernière ligne est vide, retourner la longueur - 1
-          if (content[content.length - 1].trim() === "") {
-            return content.length - 1;
-          }
-
-          // Sinon retourner la longueur totale
-          return content.length;
-        }
       });
     </script>
   </body>
