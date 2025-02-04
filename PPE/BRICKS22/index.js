@@ -255,7 +255,6 @@
         posi = GETX();
         if (posi > 1) {
           PRINT(" ");
-          ANSIPOS(posi, 22);
           ANSIPOS(GETX() - 1, 22);
           PRINT(" ");
           ANSIPOS(GETX() - 1, 22);

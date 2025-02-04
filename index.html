@@ -32,11 +32,15 @@
         const ctx = canvas.getContext("2d");
         const canvasContainer = document.getElementById("myCanvas");
 
-        // Set initial canvas size (80x25 characters * 8 pixels)
-        canvas.width = 80 * 16;
-        canvas.height = 25 * 32;
+        // Set canvas size with 16px border
+        canvas.width = 80 * 16 + 16 * 2; // Largeur + bordures gauche et droite
+        canvas.height = 25 * 32 + 16 * 2; // Hauteur + bordures haut et bas
         canvas.style.imageRendering = "pixelated"; // Keep pixel art sharp
         canvasContainer.appendChild(canvas);
+
+        // Fill canvas with black background
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         // Ajouter une pile pour suivre les scripts en cours d'exécution
         let currentRunningScript = [];
@@ -48,7 +52,9 @@
 
         let currentX = 1; // Position X de 1 à 80
         let currentY = 1; // Position Y de 1 à 25
-        let currentColor = 15; // Current text color index, 15 is white by default
+        let savedX = 1; // Pour stocker la position X sauvegardée
+        let savedY = 1; // Pour stocker la position Y sauvegardée
+        let currentColor = 7; // Current text color index, 15 is white by default
         let currentBgColor = 0; // Current background color index, 0 is black by default
 
         let blinker = false;
@@ -112,7 +118,7 @@
           currentX = 1;
           currentY++;
           if (currentY > 25) {
-            currentY = 1;
+            scrollup();
           }
         }
 
@@ -137,10 +143,12 @@
 
         function ANSIPOS(x, y) {
           if (x !== undefined && x !== null) {
-            currentX = x;
+            // Contraindre X entre 1 et 80
+            currentX = Math.min(80, Math.max(1, Math.round(x)));
           }
           if (y !== undefined && y !== null) {
-            currentY = y;
+            // Contraindre Y entre 1 et 25
+            currentY = Math.min(25, Math.max(1, Math.round(y)));
           }
         }
 
@@ -167,6 +175,9 @@
               if (currentX > 80) {
                 currentX = 1;
                 currentY++;
+                if (currentY > 25) {
+                  scrollup();
+                }
               }
 
               drawChar(str[i], currentX, currentY);
@@ -179,6 +190,9 @@
           PRINT(str);
           currentX = 1; // Reset à 1 (première colonne)
           currentY++; // Incrémente d'une ligne
+          if (currentY > 25) {
+            scrollup();
+          }
         }
 
         function DELAY(val) {
@@ -217,6 +231,48 @@
         function UPPER(str) {
           if (!str) return "";
           return str.toUpperCase();
+        }
+
+        // Nouvelle fonction NOCOLOR
+        function NOCOLOR(str) {
+          if (!str) return "";
+          // Supprime tous les codes couleurs de format @Xnn
+          return str.replace(/@X[0-9A-F][0-9A-F]/gi, "");
+        }
+
+        // Nouvelle fonction BACKUP
+        function BACKUP(nb) {
+          // S'assurer que nb est un entier positif
+          nb = Math.max(0, Math.floor(nb));
+          // Calculer la nouvelle position X sans aller en dessous de 1
+          currentX = Math.max(1, currentX - nb);
+        }
+
+        // Nouvelle fonction FORWARD
+        function FORWARD(nb) {
+          // S'assurer que nb est un entier positif
+          nb = Math.max(0, Math.floor(nb));
+          // Calculer la nouvelle position X sans dépasser 80
+          currentX = Math.min(80, currentX + nb);
+        }
+
+        // Nouvelle fonction COLOR
+        function COLOR(col) {
+          // S'assurer que la valeur est entre 0 et 15
+          col = Math.max(0, Math.min(15, Math.floor(col)));
+          currentColor = col;
+        }
+        function BGCOLOR(col) {
+          // S'assurer que la valeur est entre 0 et 15
+          col = Math.max(0, Math.min(15, Math.floor(col)));
+          currentBgColor = col;
+        }
+
+        // Nouvelle fonction DEFCOLOR
+        function DEFCOLOR() {
+          // Réinitialiser aux couleurs par défaut
+          currentBgColor = 0; // Noir
+          currentColor = 7; // Gris clair
         }
 
         async function WAIT() {
@@ -425,6 +481,18 @@
           } catch (error) {
             PRINTLN("@X0C Error reading file: " + error.message);
           }
+        }
+
+        // Nouvelle fonction SAVEPOS
+        function SAVEPOS() {
+          savedX = currentX;
+          savedY = currentY;
+        }
+
+        // Nouvelle fonction RESTOREPOS
+        function RESTOREPOS() {
+          currentX = savedX;
+          currentY = savedY;
         }
 
         //-------------------------
@@ -657,9 +725,9 @@
           const sourceX = (charCode % 256) * charWidth;
           const sourceY = currentColor * charHeight;
 
-          // Convert character positions to pixel positions
-          const pixelX = (x - 1) * charWidth;
-          const pixelY = (y - 1) * charHeight;
+          // Convert character positions to pixel positions with border offset
+          const pixelX = (x - 1) * charWidth + 16; // Ajouter le décalage de la bordure
+          const pixelY = (y - 1) * charHeight + 16; // Ajouter le décalage de la bordure
 
           // Draw background first
           ctx.drawImage(bgImage, currentBgColor * 16, 0, 16, 32, pixelX, pixelY, charWidth, charHeight);
@@ -673,6 +741,37 @@
           setInterval(() => {
             blinker = !blinker; // Inverse la valeur de blinker
           }, 500); // Toutes les 500ms
+        }
+
+        function scrollup() {
+          // Déplacer les caractères et les attributs d'une ligne vers le haut
+          for (let y = 0; y < 24; y++) {
+            for (let x = 0; x < 80; x++) {
+              // Copier le caractère et les attributs de la ligne suivante
+              mychars[y][x] = mychars[y + 1][x];
+              myattribs[y][x] = myattribs[y + 1][x];
+
+              // Redessiner avec les bons attributs
+              const pixelX = x * charWidth;
+              const pixelY = y * charHeight;
+
+              // Dessiner le fond
+              ctx.drawImage(bgImage, myattribs[y][x].bg * 16, 0, 16, 32, pixelX, pixelY, charWidth, charHeight);
+
+              // Dessiner le caractère avec sa couleur
+              const charCode = mapSpecialChar(mychars[y][x]);
+              ctx.drawImage(fontImage, (charCode % 256) * charWidth, myattribs[y][x].fg * charHeight, charWidth, charHeight, pixelX, pixelY, charWidth, charHeight);
+            }
+          }
+
+          // Effacer la dernière ligne
+          for (let x = 0; x < 80; x++) {
+            mychars[24][x] = " ";
+            myattribs[24][x] = { bg: currentBgColor, fg: currentColor };
+            drawChar(" ", x + 1, 25);
+          }
+
+          currentY = 25;
         }
 
         // Démarrer le clignotement immédiatement
