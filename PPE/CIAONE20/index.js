@@ -16,7 +16,7 @@
   // CODE / Do not change anything below here
   //--------------------------------
   var KEY = "";
-
+  BGCOLOR(1);
   CLS();
   drawLine();
   drawTopLogo();
