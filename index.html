@@ -32,13 +32,14 @@
         const ctx = canvas.getContext("2d");
         const canvasContainer = document.getElementById("myCanvas");
 
-        const canvasBorder = 32; // Taille de la bordure en pixels
+        const canvasBorderX = 16; // Taille de la bordure en pixels
+        const canvasBorderY = 32; // Taille de la bordure en pixels
         let charWidth = 16; // Default character width
         let charHeight = 32; // Default character height
 
         // Set canvas size with border
-        canvas.width = 80 * charWidth + canvasBorder * 2; // Largeur + bordures gauche et droite
-        canvas.height = 25 * charHeight + canvasBorder * 2; // Hauteur + bordures haut et bas
+        canvas.width = 80 * charWidth + canvasBorderX * 2; // Largeur + bordures gauche et droite
+        canvas.height = 25 * charHeight + canvasBorderY * 2; // Hauteur + bordures haut et bas
         canvas.style.imageRendering = "pixelated"; // Keep pixel art sharp
         canvasContainer.appendChild(canvas);
 
@@ -107,7 +108,7 @@
               myattribs[y][x] = { bg: currentBgColor, fg: currentColor };
 
               // Dessin sur le canvas avec offset de 16 pixels
-              ctx.drawImage(bgImage, currentBgColor * 16, 0, 16, 32, x * charWidth + canvasBorder, y * charHeight + canvasBorder, charWidth, charHeight);
+              ctx.drawImage(bgImage, currentBgColor * 16, 0, 16, 32, x * charWidth + canvasBorderX, y * charHeight + canvasBorderY, charWidth, charHeight);
             }
           }
           // Reset cursor position
@@ -125,8 +126,8 @@
 
         function CLREOL() {
           // Calculate starting position
-          const startX = (currentX - 1) * charWidth + canvasBorder;
-          const y = (currentY - 1) * charHeight + canvasBorder;
+          const startX = (currentX - 1) * charWidth + canvasBorderX;
+          const y = (currentY - 1) * charHeight + canvasBorderY;
 
           // Clear from current position to end of line
           for (let x = currentX - 1; x < 80; x++) {
@@ -138,7 +139,7 @@
             };
 
             // Dessin sur le canvas
-            ctx.drawImage(bgImage, currentBgColor * 16, 0, 16, 32, x * charWidth + canvasBorder, y, charWidth, charHeight);
+            ctx.drawImage(bgImage, currentBgColor * 16, 0, 16, 32, x * charWidth + canvasBorderX, y, charWidth, charHeight);
           }
         }
 
@@ -727,8 +728,8 @@
           const sourceY = currentColor * charHeight;
 
           // Convert character positions to pixel positions with border offset
-          const pixelX = (x - 1) * charWidth + canvasBorder;
-          const pixelY = (y - 1) * charHeight + canvasBorder;
+          const pixelX = (x - 1) * charWidth + canvasBorderX;
+          const pixelY = (y - 1) * charHeight + canvasBorderY;
 
           // Draw background first
           ctx.drawImage(bgImage, currentBgColor * 16, 0, 16, 32, pixelX, pixelY, charWidth, charHeight);
@@ -753,8 +754,8 @@
               myattribs[y][x] = myattribs[y + 1][x];
 
               // Redessiner avec les bons attributs
-              const pixelX = x * charWidth + canvasBorder;
-              const pixelY = y * charHeight + canvasBorder;
+              const pixelX = x * charWidth + canvasBorderX;
+              const pixelY = y * charHeight + canvasBorderY;
 
               // Dessiner le fond
               ctx.drawImage(bgImage, myattribs[y][x].bg * 16, 0, 16, 32, pixelX, pixelY, charWidth, charHeight);

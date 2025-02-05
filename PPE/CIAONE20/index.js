@@ -16,7 +16,6 @@
   // CODE / Do not change anything below here
   //--------------------------------
   var KEY = "";
-  BGCOLOR(1);
   CLS();
   drawLine();
   drawTopLogo();
@@ -52,6 +51,7 @@
   } else {
     DEFCOLOR();
     NEWLINE();
+    PRINT("No way !");
   }
 
   function drawTopLogo() {
